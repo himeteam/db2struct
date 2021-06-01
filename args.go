@@ -26,7 +26,7 @@ func init() {
 	var err error
 	args, err = flags.ParseArgs(&opts, os.Args)
 	if err != nil {
-		panic(err)
+		os.Exit(0)
 	}
 
 	if opts.Host == "" {
