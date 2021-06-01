@@ -1,8 +1,9 @@
 package db2struct
 
 import (
-	"github.com/jessevdk/go-flags"
 	"os"
+
+	"github.com/jessevdk/go-flags"
 )
 
 type Opts struct {
