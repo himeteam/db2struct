@@ -3,13 +3,14 @@ package db2struct
 import (
 	"bytes"
 	"embed"
-	"github.com/iancoleman/strcase"
 	"go/format"
 	"html/template"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/iancoleman/strcase"
 )
 
 //go:embed templates
@@ -19,7 +20,7 @@ func raw(x string) interface{} {
 	return template.HTML(x)
 }
 
-func GenerateStruct(tpl string, table string, cols []StructCol) string {
+func GenerateStruct(tpl string, table string, cols []*StructCol) string {
 	t := template.New(table)
 	t = t.Funcs(template.FuncMap{"raw": raw})
 	t, err := t.Parse(tpl)
@@ -28,13 +29,15 @@ func GenerateStruct(tpl string, table string, cols []StructCol) string {
 	}
 
 	var data struct {
-		Package   string
-		TableName string
-		Cols      []StructCol
+		Package     string
+		TableName   string
+		DBTableName string
+		Cols        []*StructCol
 	}
 
 	data.Package = opts.Package
 	data.TableName = strings.Title(strcase.ToCamel(table))
+	data.DBTableName = table
 	data.Cols = cols
 
 	buf := bytes.NewBufferString("")
@@ -48,7 +51,6 @@ func GenerateStruct(tpl string, table string, cols []StructCol) string {
 	if err != nil {
 		panic(err)
 	}
-
 	return string(o)
 }
 

@@ -3,10 +3,11 @@ package db2struct
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/iancoleman/strcase"
 	"net/url"
 	"strings"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/iancoleman/strcase"
 )
 
 type ColDetail struct {
@@ -51,7 +52,7 @@ func Close() {
 	db.Close()
 }
 
-func GetTableDetail(table string) []ColDetail {
+func GetTableDetail(table string) (cds []*ColDetail) {
 	rows, err := db.Query("select "+
 		"COLUMN_NAME,"+
 		"DATA_TYPE,"+
@@ -67,10 +68,8 @@ func GetTableDetail(table string) []ColDetail {
 		panic(err)
 	}
 
-	cols := make([]ColDetail, 0)
-
 	for rows.Next() {
-		col := ColDetail{}
+		col := &ColDetail{}
 		var nullable string
 		err = rows.Scan(
 			&col.ColumnName,
@@ -82,7 +81,6 @@ func GetTableDetail(table string) []ColDetail {
 			&nullable,
 			&col.ColumnDefault,
 		)
-
 		if err != nil {
 			panic(err)
 		}
@@ -90,14 +88,13 @@ func GetTableDetail(table string) []ColDetail {
 		if strings.ToUpper(nullable) == "YES" {
 			col.IsNullable = true
 		}
-
-		cols = append(cols, col)
+		cds = append(cds, col)
 	}
-	return cols
+	return cds
 }
 
 type StructCol struct {
-	Name       string
+	FieldName  string
 	ColName    string
 	Type       string
 	Comment    string
@@ -106,31 +103,30 @@ type StructCol struct {
 	Tag        string
 }
 
-func ToStructCol(cols []ColDetail) []StructCol {
-	sc := make([]StructCol, 0)
+func ToStructCol(cols []*ColDetail) (scs []*StructCol) {
 	for _, col := range cols {
+		if col != nil {
+			var fieldName string
+			if col.ColumnName == "id" {
+				fieldName = "ID"
+			} else {
+				fieldName = strings.Title(strcase.ToCamel(col.ColumnName))
+			}
 
-		var name string
+			c := &StructCol{}
+			c.FieldName = fieldName
+			c.ColName = col.ColumnName
+			c.IsNullable = col.IsNullable
+			c.Comment = strings.ReplaceAll(col.ColumnComment, "\n", " ")
+			c.IsPri = strings.Contains(col.Extra, "PRI")
+			c.Type = getType(col)
+			tags := getTags(col)
 
-		if col.ColumnName == "id" {
-			name = "ID"
-		} else {
-			name = strings.Title(strcase.ToCamel(col.ColumnName))
+			if len(tags) > 0 {
+				c.Tag = "`" + strings.Join(tags, " ") + "`"
+			}
+			scs = append(scs, c)
 		}
-
-		c := StructCol{}
-		c.Name = name
-		c.ColName = col.ColumnName
-		c.IsNullable = col.IsNullable
-		c.Comment = strings.ReplaceAll(col.ColumnComment, "\n", " ")
-		c.IsPri = strings.Contains(col.Extra, "PRI")
-		c.Type = getType(col)
-		tags := getTags(col)
-
-		if len(tags) > 0 {
-			c.Tag = "`" + strings.Join(tags, " ") + "`"
-		}
-		sc = append(sc, c)
 	}
-	return sc
+	return scs
 }

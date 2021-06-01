@@ -2,7 +2,7 @@ package db2struct
 
 import "strings"
 
-func getType(col ColDetail) string {
+func getType(col *ColDetail) string {
 
 	// gorm soft delete
 	if opts.GormTag && col.ColumnName == "deleted_at" && strings.ToUpper(col.DataType) == "TIMESTAMP" {

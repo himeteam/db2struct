@@ -5,20 +5,18 @@ import (
 	"strings"
 )
 
-type getTagFunc func(cols ColDetail) string
+type getTagFunc func(cols *ColDetail) string
 
-func getTags(col ColDetail) []string {
+func getTags(col *ColDetail) []string {
 	tags := make([]string, 0)
-	getTagFuncList := make([]getTagFunc, 0)
+	var getTagFuncList []getTagFunc
 
 	if opts.JsonTag {
 		getTagFuncList = append(getTagFuncList, jsonTag)
 	}
-
 	if opts.GormTag {
 		getTagFuncList = append(getTagFuncList, gormTag)
 	}
-
 	if opts.XormTag {
 		getTagFuncList = append(getTagFuncList, xormTag)
 	}
@@ -35,12 +33,13 @@ func getTags(col ColDetail) []string {
 	return tags
 }
 
-func jsonTag(col ColDetail) string {
+func jsonTag(col *ColDetail) string {
 	return fmt.Sprintf("json:\"%s\"", col.ColumnName)
 }
 
-func gormTag(col ColDetail) string {
-	tags := make([]string, 0)
+func gormTag(col *ColDetail) string {
+	var tags []string
+	tags = append(tags, "column:"+col.ColumnName)
 
 	if strings.Contains(col.ColumnKey, "PRI") {
 		tags = append(tags, "primaryKey")
@@ -66,14 +65,10 @@ func gormTag(col ColDetail) string {
 		tags = append(tags, "default: '"+*col.ColumnDefault+"'")
 	}
 
-	if len(tags) == 0 {
-		return ""
-	}
-
 	return "gorm:\"" + strings.Join(tags, ";") + "\""
 }
 
-func xormTag(col ColDetail) string {
+func xormTag(col *ColDetail) string {
 	tags := make([]string, 0)
 
 	if strings.Contains(col.ColumnKey, "PRI") {
