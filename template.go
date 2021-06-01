@@ -3,6 +3,7 @@ package db2struct
 import (
 	"bytes"
 	"embed"
+	"github.com/iancoleman/strcase"
 	"go/format"
 	"html/template"
 	"io/ioutil"
@@ -27,10 +28,13 @@ func GenerateStruct(tpl string, table string, cols []StructCol) string {
 	}
 
 	var data struct {
+		Package   string
 		TableName string
 		Cols      []StructCol
 	}
-	data.TableName = strings.Title(table)
+
+	data.Package = opts.Package
+	data.TableName = strings.Title(strcase.ToCamel(table))
 	data.Cols = cols
 
 	buf := bytes.NewBufferString("")

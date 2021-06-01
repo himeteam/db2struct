@@ -35,9 +35,9 @@ func GetDSN(host, port, user, passwd string) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/?%s", user, passwd, host, port, connectConfigs.Encode())
 }
 
-func InitDBConn(host, port, user, passwd string) {
+func InitDBConn() {
 	var err error
-	db, err = sql.Open("mysql", GetDSN(host, port, user, passwd))
+	db, err = sql.Open("mysql", GetDSN(opts.Host, opts.Port, opts.User, opts.Password))
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +51,7 @@ func Close() {
 	db.Close()
 }
 
-func GetTableDetail(dbName, table string) []ColDetail {
+func GetTableDetail(table string) []ColDetail {
 	rows, err := db.Query("select "+
 		"COLUMN_NAME,"+
 		"DATA_TYPE,"+
@@ -61,7 +61,7 @@ func GetTableDetail(dbName, table string) []ColDetail {
 		"COLUMN_COMMENT,"+
 		"IS_NULLABLE,"+
 		"COLUMN_DEFAULT "+
-		"from information_schema.columns where table_schema = ? and table_name = ? order by ORDINAL_POSITION ASC", dbName, table)
+		"from information_schema.columns where table_schema = ? and table_name = ? order by ORDINAL_POSITION ASC", opts.Database, table)
 
 	if err != nil {
 		panic(err)
@@ -106,17 +106,26 @@ type StructCol struct {
 	Tag        string
 }
 
-func ToStructCol(cols []ColDetail, enableTags map[string]bool) []StructCol {
+func ToStructCol(cols []ColDetail) []StructCol {
 	sc := make([]StructCol, 0)
 	for _, col := range cols {
+
+		var name string
+
+		if col.ColumnName == "id" {
+			name = "ID"
+		} else {
+			name = strings.Title(strcase.ToCamel(col.ColumnName))
+		}
+
 		c := StructCol{}
-		c.Name = strings.Title(strcase.ToCamel(col.ColumnName))
+		c.Name = name
 		c.ColName = col.ColumnName
 		c.IsNullable = col.IsNullable
 		c.Comment = strings.ReplaceAll(col.ColumnComment, "\n", " ")
 		c.IsPri = strings.Contains(col.Extra, "PRI")
 		c.Type = getType(col)
-		tags := getTags(col, enableTags)
+		tags := getTags(col)
 
 		if len(tags) > 0 {
 			c.Tag = "`" + strings.Join(tags, " ") + "`"

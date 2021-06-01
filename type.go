@@ -3,6 +3,12 @@ package db2struct
 import "strings"
 
 func getType(col ColDetail) string {
+
+	// gorm soft delete
+	if opts.GormTag && col.ColumnName == "deleted_at" && strings.ToUpper(col.DataType) == "TIMESTAMP" {
+		return "gorm.DeletedAt"
+	}
+
 	switch strings.ToUpper(col.DataType) {
 	case "TINYINT", "SMALLINT", "INT", "MEDIUMINT":
 		return nullableType("int", col.IsNullable)

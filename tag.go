@@ -7,19 +7,19 @@ import (
 
 type getTagFunc func(cols ColDetail) string
 
-func getTags(col ColDetail, enableTags map[string]bool) []string {
+func getTags(col ColDetail) []string {
 	tags := make([]string, 0)
 	getTagFuncList := make([]getTagFunc, 0)
 
-	if enableTags["json"] {
+	if opts.JsonTag {
 		getTagFuncList = append(getTagFuncList, jsonTag)
 	}
 
-	if enableTags["gorm"] {
+	if opts.GormTag {
 		getTagFuncList = append(getTagFuncList, gormTag)
 	}
 
-	if enableTags["xorm"] {
+	if opts.XormTag {
 		getTagFuncList = append(getTagFuncList, xormTag)
 	}
 
